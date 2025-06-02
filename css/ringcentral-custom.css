@@ -3,22 +3,22 @@
  * 
  */
 .SiteWide {
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: inter, "Proxima Nova", Arial, Helvetica;
     background-color: #0073AE;
 }
 /* ====== admin display tables ================== */
 .CustomTable {
     background-color: white !important;
     margin-top: 40px;
-    width: 650px;
+    width: 1150px;
     /* border: 1px solid red ; */
-    padding: 15px;
+    padding: 30px;
     margin-left: auto;
     margin-right: auto;
 }
 .CustomTable td, th {
     padding: 5px !important;
-    /*border: 1px solid red ;*/
+    /* border: 1px solid grey ; */
 }
 .CustomTable select {
     /* height: 26px !important;   */
@@ -35,9 +35,6 @@
 .CustomTableFullCol {
     text-align: center;
 }
-.CustomTableFullCol_left {
-    text-align: left;
-}
 .left_col {
     width: 50% !important;
     vertical-align: top !important;
@@ -45,6 +42,10 @@
 }
 .right_col {
     width: 50% !important;
+    vertical-align: top;
+}
+.center_col {
+    text-align: center;
     vertical-align: top;
 }
 /* =====================  */
@@ -81,13 +82,12 @@
 }
 /* =====================  */
 .addform_left_col {
-    width: 50% !important;
+    width: 35% !important;
     padding-left: 10px;
     padding-top: 10px;
     padding-bottom: 10px;
 }
 .addform_right_col {
-    width: 50% !important;
     padding-left: 10px;
     padding-top: 10px;
     padding-bottom: 10px;
@@ -190,9 +190,12 @@
         opacity: 0;
     }
 }
-.SMSToggle {
-    display: none;
-}
-.TMToggle {
-    display: none;
+
+#pdf-container {
+    width: 80%;
+    height: 600px; /* Set the height as needed */
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #ccc;
+    overflow: hidden;
 }

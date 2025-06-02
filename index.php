@@ -1,71 +1,136 @@
-
-<br/><br/>
-<a href="create_fax.php" target="_blank">Create a fax to send</a>
-<br/><br/><br/>
-
 <?php
+/**
+ * Copyright (C) 2019-2024 Paladin Business Solutions
+ */
+ob_start() ;
+session_start();
+
+require_once('includes/ringcentral-functions.inc');
 require_once('includes/ringcentral-php-functions.inc');
 
-//show_errors();
+show_errors();
 
-require('includes/vendor/autoload.php');
+page_header(0);
 
-$dotenv = Dotenv\Dotenv::createMutable(__DIR__ . '/includes')->load();
+function show_form ($message, $label = "", $print_again = false) {
 
-$client_id = $_ENV['RC_APP_CLIENT_ID'];
-$client_secret = $_ENV['RC_APP_CLIENT_SECRET'];
-$jwt_key = $_ENV['RC_JWT_KEY'];
-
-$server = 'https://platform.ringcentral.com';
-
-try {
-	// Initialize the RingCentral SDK
-	$rcsdk = new RingCentral\SDK\SDK($client_id, $client_secret, $server);
-	$platform = $rcsdk->platform();
-
-	// Authenticate using JWT
-	$platform->login(['jwt' => $jwt_key]);
-
-	$startDate = date('Y-m-d\TH:i:s\Z', strtotime('-1 year'));
-	$endDate = date('Y-m-d\TH:i:s\Z', strtotime('now'));
-
-	$queryParams = array(
-		'dateFrom' => $startDate,
-		'dateTo' => $endDate,
-		'availability' => 'Alive',  // Only non-deleted messages
-		'direction' => 'Inbound',
-		'messageType' => 'Fax',
-	);
-
-	// Fetch voicemail messages
-	$response = $platform->get('/restapi/v1.0/account/~/extension/~/message-store', $queryParams);
-
-	$faxes = $response->json()->records;
-
-	// echo_spaces("Raw message list", $messages);
-	$i = 0;
-	if (!empty($faxes)) {
-		foreach ($faxes as $fax) {
-			if (!empty($fax->attachments)) {
-				$i++;
-				echo_spaces("=== Received FAX Information $i ===","", 0, false);
-				echo_spaces("Fax from", $fax->from->name);
-				echo_spaces("Fax #", $fax->from->phoneNumber);
-				echo_spaces("Fax # of pages", $fax->faxPageCount, 1);
-				foreach ($fax->attachments as $attachment) {
-					if ($attachment->contentType == 'application/pdf') {
-						$faxUri = $attachment->uri;
-						// Display a viewable link
-						echo "<a href='display_fax.php?uri=" . urlencode($faxUri) . "' target='_blank'>View fax in PDF format</a><br/>";
-					}
-				}
-			}
-		}
-	} else {
-		$startDate = date('F j, Y g:i a', strtotime($startDate));
-		$endDate   = date('F j, Y g:i a', strtotime($endDate));
-		echo_spaces("No Faxes found for provided date range from: $startDate to: $endDate", "", 0, false);
-	}
-} catch (Exception $e) {
-	echo 'Error: ' . $e->getMessage();
+    ?>
+    <form action="" method="post" enctype="multipart/form-data">
+        <table class="EditTable" >
+            <tr class="CustomTable">
+                <td colspan="2" class="CustomTableFullCol">
+                    <img src="images/rc-logo.png"/>
+                    <h2><?php echo app_name(); ?></h2>
+                    <?php
+                    if ($print_again == true) {
+                        echo "<p class='msg_bad'>" . $message . "</strong></font>";
+                    } else {
+                        echo "<p class='msg_good'>" . $message . "</p>";
+                    } ?>
+                    <hr>
+                </td>
+            </tr>
+            <tr class="CustomTable">
+                <td class="left_col">
+                    <p style='display: inline; <?php if ($label == "to_fax_number") echo "color:red"; ?>'>Receiving Fax #:</p>
+                </td>
+                <td class="right_col">
+                    <input type="text" name="to_fax_number" >
+                </td>
+            </tr>
+            <tr class="CustomTable">
+                <td class="left_col">
+                    <p style='display: inline; <?php if ($label == "cover_note") echo "color:red"; ?>'>Fax Cover Note:</p>
+                </td>
+                <td class="right_col">
+                    <input type="text" name="cover_note" >
+                </td>
+            </tr>
+            <tr class="CustomTable">
+                <td class="left_col">
+                    <p style='display: inline; <?php if ($label == "file_to_fax") echo "color:red"; ?>'>Upload file to Fax:</p>
+                </td>
+                <td class="right_col">
+                    <input type="file" name="file_to_fax" id="file_to_fax">
+                </td>
+            </tr>
+            <tr class="CustomTable">
+                <td class="CustomTableFullCol">
+                    <br/>
+                    <input type="submit" class="submit_button" value="   List Faxes   " name="list_faxes">
+                </td>
+                <td class="CustomTableFullCol">
+                    <br/>
+                    <input type="submit" class="submit_button" value="   Send Fax   " name="send_fax">
+                </td>
+            </tr>
+            <tr class="CustomTable">
+                <td colspan="2" class="CustomTableFullCol"><hr></td>
+            </tr>
+        </table>
+    </form>
+    <?php
 }
+
+function check_form () {
+    show_errors();
+
+    $print_again = false;
+    $label = "";
+    $message = "";
+
+    /* ============================================ */
+    /* ====== START data integrity checks ========= */
+    /* ============================================ */
+
+    $to_fax_number = strip_tags($_POST['to_fax_number']);
+    $cover_note = strip_tags($_POST['cover_note']);
+    $target_file = basename($_FILES["file_to_fax"]["name"]);
+
+    if ($target_file == "") {
+        $print_again = true;
+        $label = "";
+        $message = "No file selected to be uploaded";
+    }
+    if ($cover_note == "") {
+        $print_again = true;
+        $label = "cover_note";
+        $message = "No cover note has been provided";
+    }
+    if ($to_fax_number == "") {
+        $print_again = true;
+        $label = "to_fax_number";
+        $message = "No receiving Fax Number has been provided";
+    }
+
+    /* ========================================== */
+    /* ====== END data integrity checks ========= */
+    /* ========================================== */
+
+    $file_with_path = upload_file();
+
+    $fax_sent_id = send_fax($to_fax_number, $file_with_path, $cover_note) ;
+    if ($fax_sent_id > 0) {
+        $print_again = true;
+        $label = "";
+        $message = "Fax sent successfully (Sent id): " . $fax_sent_id ;
+        // clean out the file
+        unlink($file_with_path) ;
+    }
+    show_form($message, $label, $print_again);
+}
+
+/* ============= */
+/*  --- MAIN --- */
+/* ============= */
+if (isset($_POST['send_fax'])) {
+    check_form();
+} elseif (isset($_POST['list_faxes'])) {
+    header("Location: list_faxes.php");
+} else {
+    $message = "Please provide information to be faxed. <br/><br/>";
+    show_form($message);
+}
+
+ob_end_flush();
+page_footer();
