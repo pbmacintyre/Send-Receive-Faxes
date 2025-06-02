@@ -1,7 +1,12 @@
+
+<br/><br/>
+<a href="create_fax.php" target="_blank">Create a fax to send</a>
+<br/><br/><br/>
+
 <?php
 require_once('includes/ringcentral-php-functions.inc');
 
-// show_errors();
+//show_errors();
 
 require('includes/vendor/autoload.php');
 
@@ -21,51 +26,45 @@ try {
 	// Authenticate using JWT
 	$platform->login(['jwt' => $jwt_key]);
 
-	$startDate = date('Y-m-d\TH:i:s\Z', strtotime('-2 weeks'));
+	$startDate = date('Y-m-d\TH:i:s\Z', strtotime('-1 year'));
 	$endDate = date('Y-m-d\TH:i:s\Z', strtotime('now'));
 
 	$queryParams = array(
 		'dateFrom' => $startDate,
 		'dateTo' => $endDate,
-		'messageType' => 'VoiceMail',
+		'availability' => 'Alive',  // Only non-deleted messages
+		'direction' => 'Inbound',
+		'messageType' => 'Fax',
 	);
 
 	// Fetch voicemail messages
 	$response = $platform->get('/restapi/v1.0/account/~/extension/~/message-store', $queryParams);
 
-	$messages = $response->json()->records;
+	$faxes = $response->json()->records;
 
-//	echo_spaces("Raw message list", $messages);
-
-	if (!empty($messages)) {
-		foreach ($messages as $message) {
-			if (!empty($message->attachments)) {
-				echo_spaces("=== Voice Mail Information ===","", 1, false);
-				echo_spaces("Voicemail from ", $message->from->name);
-				echo_spaces("Voicemail # ", $message->from->phoneNumber, 1);
-				foreach ($message->attachments as $attachment) {
-					if ($attachment->contentType == 'audio/mpeg') {
-						$recordingUri = $attachment->uri;
-						// Fetch the recording
-						$recordingResponse = $platform->get($recordingUri);
-						$recordingContent = $recordingResponse->raw();
-						// Save the recording to a local file
-						$fileName = 'voicemail_' . $message->id . '.mp3';
-						file_put_contents($fileName, $recordingContent);
-						// Display a playable link
-						echo "<audio controls>
-                            <source src=\"$fileName\" type=\"audio/mpeg\">                            
-                          </audio><br/><br/>";
-					}
-					if ($attachment->contentType == 'text/plain') {
-						$recordingResponse = $platform->get($attachment->uri);
-						echo $recordingResponse->raw(). "<br/>" ;
+	// echo_spaces("Raw message list", $messages);
+	$i = 0;
+	if (!empty($faxes)) {
+		foreach ($faxes as $fax) {
+			if (!empty($fax->attachments)) {
+				$i++;
+				echo_spaces("=== Received FAX Information $i ===","", 0, false);
+				echo_spaces("Fax from", $fax->from->name);
+				echo_spaces("Fax #", $fax->from->phoneNumber);
+				echo_spaces("Fax # of pages", $fax->faxPageCount, 1);
+				foreach ($fax->attachments as $attachment) {
+					if ($attachment->contentType == 'application/pdf') {
+						$faxUri = $attachment->uri;
+						// Display a viewable link
+						echo "<a href='display_fax.php?uri=" . urlencode($faxUri) . "' target='_blank'>View fax in PDF format</a><br/>";
 					}
 				}
 			}
 		}
 	} else {
-		echo "No voicemails found.";
+		$startDate = date('F j, Y g:i a', strtotime($startDate));
+		$endDate   = date('F j, Y g:i a', strtotime($endDate));
+		echo_spaces("No Faxes found for provided date range from: $startDate to: $endDate", "", 0, false);
 	}
 } catch (Exception $e) {
 	echo 'Error: ' . $e->getMessage();
