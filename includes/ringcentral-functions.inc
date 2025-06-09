@@ -19,7 +19,7 @@ function ringcentral_sdk () {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 
-    $jwt_key = $_ENV['RC_USER_JWT'] ;
+    $jwt_key = $_ENV['RC_JWT_KEY'] ;
 
     $sdk = new RingCentral\SDK\SDK(
         $_ENV['RC_APP_CLIENT_ID'],
@@ -74,7 +74,7 @@ function get_faxes () {
     $platform = $controller['platform'];
 
     $dateTime = new DateTime('now', new DateTimeZone('AST'));
-    $fromDate = $startDateTime = $dateTime->modify('-4 days')->format('Y-m-d\TH:i:s.v\Z');
+    $fromDate = $startDateTime = $dateTime->modify('-1 year')->format('Y-m-d\TH:i:s.v\Z');
 
     $queryParams = array(
         'availability' => array('Alive',),

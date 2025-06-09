@@ -33,7 +33,7 @@ function show_form ($message, $label = "", $print_again = false) { ?>
             <td class="CustomTableFullCol">
                 <div id="pdf-container">
                     <!-- Embed the PDF using iframe -->
-                    <iframe src="<?php echo $filename; ?>" width="100%" height="100%" style="border: none;"></iframe>
+                    <iframe src="<?php echo $filename; ?>" width="100%" height="750px" style="border: none;"></iframe>
                 </div>
             </td>
         </tr>
